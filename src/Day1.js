@@ -4,14 +4,10 @@ import {useSetState} from './hooks'
 
 const {width, height} = Dimensions.get('window')
 
-function strTime(time) {
-
-}
-
 function Head({time}) {
   return (
     <View>
-      <Text>{time / 100 + ''}</Text>
+      <Text>{time / 1000 + ''}</Text>
     </View>
   )
 }
@@ -23,9 +19,9 @@ function Record(props) {
       keyExtractor={item => item.id + ''}
       renderItem={({item}) => (
         <View style={{alignItems: 'center', justifyContent: 'space-around', flexDirection: 'row'}}>
-          <Text>id: {item.id}</Text>
-          <Text>diff: +{item.diff}</Text>
-          <Text>time: {item.time}</Text>
+          <Text>{('0'.repeat(3) + item.id).slice(-3)}</Text>
+          <Text>diff: +{item.diff / 1000}</Text>
+          <Text>time: {item.time / 1000}</Text>
         </View>  
       )}
     />
@@ -50,6 +46,8 @@ function Controler(props) {
 let timer = null
 const defaultState = {
   time: 0,
+  startTime: 0,
+  lastTime: 0,
   playing: false,
   record: []
 }
@@ -62,11 +60,13 @@ export default function StopWatch() {
       clearInterval(timer)
     } else {
       timer = setInterval(() => {
-        setState((st) => ({time: st.time + 1}))
+        setState((st) => ({time: (new Date()).getTime() - st.startTime}))
       }, 10)
     }
     setState({
-      playing: !state.playing
+      playing: !state.playing,
+      startTime: state.startTime || (new Date()).getTime(),
+      lastTime: (new Date()).getTime()
     })
   }
   
@@ -74,10 +74,16 @@ export default function StopWatch() {
     const {playing} = state
     if (playing) {
       setState((st) => {
-        const len = st.record.length 
-        const lastRecord = st.record[0]
+        const len = st.record.length
+        const now = Date.now()
+        const item = {
+          id: len + 1,
+          diff: now - st.lastTime,
+          time: now - st.startTime,
+        }
         return {
-          record: [{id: len + 1, diff: lastRecord ? st.time - lastRecord.time : st.time, time: st.time}, ...st.record]
+          lastTime: now,
+          record: [item, ...st.record]
         }
       })
     } else {
